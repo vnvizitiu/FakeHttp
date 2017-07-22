@@ -1,0 +1,51 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard1.4</TargetFramework>
+    <PackageId>Dkackman.FakeHttp</PackageId>
+    <Authors>dkackman</Authors>
+    <Version>3.0.0-alpha3</Version>
+    <Company>kackman.net</Company>
+    <Product>FakeHttp</Product>
+    <Description>A library to allow faking of client http logic with System.Net.Http. Supports recording and playback of responses. Particularly useful for separating client-side unit tests from web services.</Description>
+    <PackageReleaseNotes>3.0.0
+    - Add AssemblyResources
+    - Add AutoFiltering of common sensitive values
+
+2.0.1 - bug fixes
+
+2.0.0 - Convert to NetStandard
+	- remove platform assemblies
+	- add ZipArchive support
+
+1.3.0 - Add Automatic mode
+1.2.1 - Add Universal support
+1.2.0 - Set Date header automatically by default
+  - bug fix https://github.com/dkackman/FakeHttp/issues/1
+1.1.0 - Bug fixes
+  Add ability to control response serializaion and deserialization via IResponseCallbacks
+1.0.0 - Initial release renamed to FakeHttp</PackageReleaseNotes>
+    <NeutralLanguage>en</NeutralLanguage>
+    <Copyright>Copyright Don Kackman 2015, 2017</Copyright>
+    <PackageLicenseUrl>http://opensource.org/licenses/Apache-2.0</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/dkackman/FakeHttp</PackageProjectUrl>
+    <PackageIconUrl>https://raw.githubusercontent.com/dkackman/DynamicRestProxy/master/nugeticon.png</PackageIconUrl>
+    <RepositoryUrl></RepositoryUrl>
+    <PackageTags>fake http REST mock stub unit test testing .net</PackageTags>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <RootNamespace>FakeHttp</RootNamespace>
+    <AssemblyName>FakeHttp</AssemblyName>
+    <AssemblyVersion>3.0.0.0</AssemblyVersion>
+    <FileVersion>3.0.0.0</FileVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DocumentationFile>bin\Release\netstandard1.4\FakeHttp.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
+    <PackageReference Include="System.Net.Http" Version="4.3.2" />
+  </ItemGroup>
+
+</Project>

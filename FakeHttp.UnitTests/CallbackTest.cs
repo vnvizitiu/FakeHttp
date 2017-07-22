@@ -11,6 +11,8 @@ using UnitTestHelpers;
 
 using Newtonsoft.Json;
 
+using FakeHttp.Resources;
+
 namespace FakeHttp.UnitTests
 {
     [TestClass]
@@ -24,14 +26,14 @@ namespace FakeHttp.UnitTests
                 return name == "key";
             }
 
-            public async override Task<Stream> Deserialized(ResponseInfo info, Stream content)
+            public override Stream Deserialized(ResponseInfo info, Stream content)
             {
                 if (info != null)
                 {
                     info.ResponseHeaders.Add("FAKE_HEADER", Enumerable.Repeat("FAKE", 1));
                 }
 
-                return await base.Deserialized(info, content);
+                return base.Deserialized(info, content);
             }
 
             public async override Task<Stream> Serializing(HttpResponseMessage response)
@@ -61,47 +63,6 @@ namespace FakeHttp.UnitTests
 
         [TestMethod]
         [TestCategory("fake")]
-        public async Task FilteredQueryParametrIsIgnoredDuringFakingObsoleteMethod()
-        {
-            string key = CredentialStore.RetrieveObject("bing.key.json").Key;
-            // store the rest response in a subfolder of the solution directory for future use
-            var captureFolder = Path.Combine(TestContext.TestRunDirectory, @"..\..\FakeResponses\");
-
-            // when capturing the real response, we do not want to serialize things like api keys
-            // both because that is a possible infomration leak and also because it would
-            // bind the serialized response to the key, making successful faking dependent on
-            // the key used when capturing the response. The fake response lookup will try to find
-            // a serialized response that matches a hash of all the query paramerters. The lambda in
-            // the response store constructor below allows us to ignore certain parameters for that lookup
-            // when capturing and faking responses
-            //
-            // this test ensures that our mechanism to filter out those parameters we want to ignore works
-            //
-            var capturingHandler = new CapturingHttpClientHandler(new FileSystemResponseStore(TestContext.DeploymentDirectory, captureFolder, (name, value) => name == "key"));
-            var fakingHandler = new FakeHttpMessageHandler(new FileSystemResponseStore(captureFolder, (name, value) => name == "key")); // point the fake to where the capture is stored
-
-            using (var capturingClient = new HttpClient(capturingHandler, true))
-            using (var fakingClient = new HttpClient(fakingHandler, true))
-            {
-                capturingClient.BaseAddress = new Uri("http://dev.virtualearth.net/");
-                fakingClient.BaseAddress = new Uri("http://dev.virtualearth.net/");
-
-                using (var capturedResponse = await capturingClient.GetAsync("REST/v1/Locations?c=en-us&countryregion=us&maxres=1&postalcode=55116&key=" + key))
-                using (var fakedResponse = await fakingClient.GetAsync("REST/v1/Locations?c=en-us&countryregion=us&maxres=1&postalcode=55116&key=THIS_SHOULD_NOT_MATTER"))
-                {
-                    capturedResponse.EnsureSuccessStatusCode();
-                    fakedResponse.EnsureSuccessStatusCode();
-
-                    string captured = await capturedResponse.Content.Deserialize<string>();
-                    string faked = await fakedResponse.Content.Deserialize<string>();
-
-                    Assert.AreEqual(captured, faked);
-                }
-            }
-        }
-
-        [TestMethod]
-        [TestCategory("fake")]
         public async Task FilteredQueryParametrIsIgnoredDuringFaking()
         {
             string key = CredentialStore.RetrieveObject("bing.key.json").Key;
@@ -118,8 +79,8 @@ namespace FakeHttp.UnitTests
             //
             // this test ensures that our mechanism to filter out those parameters we want to ignore works
             //
-            var capturingHandler = new CapturingHttpClientHandler(new FileSystemResponseStore(TestContext.DeploymentDirectory, captureFolder, new TestCallbacks()));
-            var fakingHandler = new FakeHttpMessageHandler(new FileSystemResponseStore(captureFolder, new TestCallbacks())); // point the fake to where the capture is stored
+            var capturingHandler = new CapturingHttpClientHandler(new ResponseStore(new FileSystemResources(captureFolder), new TestCallbacks()));
+            var fakingHandler = new FakeHttpMessageHandler(new ReadOnlyResponseStore(new FileSystemResources(captureFolder), new TestCallbacks())); // point the fake to where the capture is stored
 
             using (var capturingClient = new HttpClient(capturingHandler, true))
             using (var fakingClient = new HttpClient(fakingHandler, true))
@@ -145,7 +106,7 @@ namespace FakeHttp.UnitTests
         [TestCategory("fake")]
         public async Task SetHeaderTimestampViaResponseCallback()
         {
-            var handler = new FakeHttpMessageHandler(new FileSystemResponseStore(TestContext.DeploymentDirectory));
+            var handler = new FakeHttpMessageHandler(new FileSystemResources(TestContext.DeploymentDirectory));
             using (var client = new HttpClient(handler, true))
             {
                 client.BaseAddress = new Uri("https://dev.virtualearth.net/");
@@ -167,7 +128,7 @@ namespace FakeHttp.UnitTests
         [TestCategory("fake")]
         public async Task SetHeaderValueDuringCallback()
         {
-            var handler = new FakeHttpMessageHandler(new FileSystemResponseStore(TestContext.DeploymentDirectory, new TestCallbacks()));
+            var handler = new FakeHttpMessageHandler(new ReadOnlyResponseStore(new FileSystemResources(TestContext.DeploymentDirectory), new TestCallbacks()));
             using (var client = new HttpClient(handler, true))
             {
                 client.BaseAddress = new Uri("https://dev.virtualearth.net/");
@@ -183,7 +144,7 @@ namespace FakeHttp.UnitTests
         {
             // capture the response from an enpoiint - TestCallBacks instance will mask a value
             var captureFolder = Path.Combine(TestContext.TestRunDirectory, @"..\..\FakeResponses\");
-            var capturingHandler = new CapturingHttpClientHandler(new FileSystemResponseStore(TestContext.DeploymentDirectory, captureFolder, new TestCallbacks()));
+            var capturingHandler = new CapturingHttpClientHandler(new ResponseStore(new FileSystemResources(captureFolder), new TestCallbacks()));
             using (var client = new HttpClient(capturingHandler, true))
             {
                 client.BaseAddress = new Uri("https://www.googleapis.com/");
@@ -192,7 +153,7 @@ namespace FakeHttp.UnitTests
             }
 
             // now use a fake handler and get the captured response, ensure that value is masked
-            var fakeHandler = new FakeHttpMessageHandler(new FileSystemResponseStore(TestContext.DeploymentDirectory));
+            var fakeHandler = new FakeHttpMessageHandler(new FileSystemResources(captureFolder));
             using (var client = new HttpClient(fakeHandler, true))
             {
                 client.BaseAddress = new Uri("https://www.googleapis.com/");

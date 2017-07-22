@@ -7,6 +7,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using UnitTestHelpers;
 
+using FakeHttp.Resources;
+
 namespace FakeHttp.UnitTests
 {
     [TestClass]
@@ -24,7 +26,7 @@ namespace FakeHttp.UnitTests
             // this is the path where responses will be stored for future use
             var path = Path.Combine(Path.GetTempPath(), "FakeHttp_UnitTests_");
 
-            var handler = new AutomaticHttpClientHandler(new FileSystemResponseStore(path));
+            var handler = new AutomaticHttpClientHandler(new FileSystemResources(path));
 
             using (var client = new HttpClient(handler, true))
             {
@@ -46,7 +48,7 @@ namespace FakeHttp.UnitTests
         public async Task ResponseIsStoredWhenNotPresent()
         {
             using (var temp = new TempFolder("FakeHttp_UnitTests"))
-            using (var client = new HttpClient(new AutomaticHttpClientHandler(new FileSystemResponseStore(temp.RootPath, temp.RootPath)), true))
+            using (var client = new HttpClient(new AutomaticHttpClientHandler(new FileSystemResources(temp.RootPath)), true))
             {
                 client.BaseAddress = new Uri("https://www.googleapis.com/");
                 using (var response = await client.GetAsync("storage/v1/b/uspto-pair"))
@@ -75,7 +77,7 @@ namespace FakeHttp.UnitTests
         public async Task StoredResponseIsReturnedWhenPresent()
         {
             using (var temp = new TempFolder("FakeHttp_UnitTests"))
-            using (var client = new HttpClient(new AutomaticHttpClientHandler(new FileSystemResponseStore(temp.RootPath, temp.RootPath)), true))
+            using (var client = new HttpClient(new AutomaticHttpClientHandler(new FileSystemResources(temp.RootPath)), true))
             {
                 // create the correct folder and place the response files there
                 var responseFolder = Path.Combine(temp.RootPath, @"www.googleapis.com\storage\v1\b\uspto-pair");

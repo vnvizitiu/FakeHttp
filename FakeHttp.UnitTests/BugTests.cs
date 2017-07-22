@@ -6,6 +6,8 @@ using System.Net.Http;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+using FakeHttp.Resources;
+
 namespace FakeHttp.UnitTests
 {
     [TestClass]
@@ -18,7 +20,7 @@ namespace FakeHttp.UnitTests
         public async Task FakeResponseHadRequestMessageSet()
         {
             var captureFolder = Path.Combine(TestContext.TestRunDirectory, @"..\..\FakeResponses\");
-            var handler = new FakeHttpMessageHandler(new FileSystemResponseStore(TestContext.DeploymentDirectory, captureFolder));
+            var handler = new FakeHttpMessageHandler(new FileSystemResources(TestContext.DeploymentDirectory));
 
             using (var client = new HttpClient(handler, true))
             {

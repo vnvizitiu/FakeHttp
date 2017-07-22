@@ -10,10 +10,13 @@ using UnitTestHelpers;
 
 using GalaSoft.MvvmLight.Ioc;
 
+using FakeHttp;
+using FakeHttp.Resources;
+
 namespace GeoCoderTests
 {
     [TestClass]
-    [DeploymentItem(@"FakeResponses\")]
+    [DeploymentItem("FakeResponses.zip")]
     public class AddressTests
     {
         private static IGeoCoder _service;
@@ -34,6 +37,7 @@ namespace GeoCoderTests
                 _service.Dispose();
             }
         }
+        public TestContext TestContext { get; set; }
 
         [TestMethod]
         [TestCategory("geocoder")]
@@ -45,8 +49,21 @@ namespace GeoCoderTests
         }
 
         [TestMethod]
-        [TestCategory("geocoder")]
         public async Task RoundtripPostalCode()
+        {
+            MessageHandlerFactory.Mode = MessageHandlerMode.Capture;
+            var handler = MessageHandlerFactory.CreateMessageHandler(new FileSystemResources(TestContext.TestRunDirectory));
+            var service = new GeoCoder(handler, CredentialStore.RetrieveObject("bing.key.json").Key);
+
+            var coord = await service.GetCoordinate(new Address() { postalCode = "55116", countryRegion = "US" });
+            var address = await service.GetAddress(coord.Item1, coord.Item2);
+
+            Assert.AreEqual("55116", address.postalCode);
+        }
+
+        [TestMethod]
+        [TestCategory("geocoder")]
+        public async Task RoundtripPostalCodes()
         {
             var coord = await _service.GetCoordinate(new Address() { postalCode = "55116", countryRegion = "US" });
             var address = await _service.GetAddress(coord.Item1, coord.Item2);
@@ -60,7 +77,7 @@ namespace GeoCoderTests
         {
             var address = await _service.ParseAddress("One Microsoft Way, Redmond, WA 98052");
 
-            Assert.AreEqual("1 Microsoft Way", address.addressLine);
+            Assert.AreEqual("Microsoft Way", address.addressLine);
             Assert.AreEqual("Redmond", address.locality);
             Assert.AreEqual("WA", address.adminDistrict);
             Assert.AreEqual("98052", address.postalCode);
